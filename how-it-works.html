@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How It Works — Organix Global Export</title>
+<link rel="icon" type="image/png" href="/img/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<nav class="nav" id="site-nav"></nav>
+
+<div class="pagehead">
+  <div class="container">
+    <h1>How it works</h1>
+    <p>The model, explained for vendors and buyers.</p>
+  </div>
+</div>
+
+<section class="section">
+  <div class="container" style="max-width:760px;">
+    <div class="tabs">
+      <div class="tab active" data-tab="vendor" onclick="showTab('vendor')">For Vendors</div>
+      <div class="tab" data-tab="buyer" onclick="showTab('buyer')">For Buyers</div>
+    </div>
+
+    <div id="tab-vendor">
+      <div class="steps" style="grid-template-columns:1fr; gap:28px;">
+        <div class="step"><div class="num">01</div><h3>Register your business</h3><p>Sign up with your business details, category, and payout account. Your account goes live immediately — no waiting.</p></div>
+        <div class="step"><div class="num">02</div><h3>List your products</h3><p>Add products with pricing, minimum order quantity (MOQ), and stock. No listing fees, ever.</p></div>
+        <div class="step"><div class="num">03</div><h3>Get verified</h3><p>Our team reviews your documents (usually within 48 hours). Verified vendors get a trust badge that buyers see.</p></div>
+        <div class="step"><div class="num">04</div><h3>Receive orders and get paid</h3><p>Fulfill orders as they come in. Payment is released to you once the buyer confirms receipt, minus our commission.</p></div>
+      </div>
+    </div>
+
+    <div id="tab-buyer" style="display:none;">
+      <div class="steps" style="grid-template-columns:1fr; gap:28px;">
+        <div class="step"><div class="num">01</div><h3>Browse the marketplace</h3><p>Search and filter by category, price, or vendor location and rating.</p></div>
+        <div class="step"><div class="num">02</div><h3>Review the vendor</h3><p>Check the vendor's verification badge, location, and product details before ordering.</p></div>
+        <div class="step"><div class="num">03</div><h3>Place your order</h3><p>Order directly from the product page. Your payment is held securely until you confirm receipt.</p></div>
+        <div class="step"><div class="num">04</div><h3>Confirm and done</h3><p>Once your order arrives, confirm receipt from your dashboard to release payment to the vendor.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer" id="site-footer"></footer>
+<script src="/js/app.js"></script>
+<script>
+  renderNav('how');
+  function showTab(name){
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+    document.getElementById('tab-vendor').style.display = name === 'vendor' ? 'block' : 'none';
+    document.getElementById('tab-buyer').style.display = name === 'buyer' ? 'block' : 'none';
+  }
+</script>
+</body>
+</html>

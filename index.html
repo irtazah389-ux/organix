@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Organix Global Export — Pakistani Products, Worldwide Buyers</title>
+<link rel="icon" type="image/png" href="/img/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<nav class="nav" id="site-nav"></nav>
+
+<header class="hero">
+  <div class="container hero-grid">
+    <div>
+      <span class="eyebrow">Made in Pakistan → Shipped worldwide</span>
+      <h1>The marketplace connecting Pakistani sellers to global buyers.</h1>
+      <p class="lead">Textiles, handicrafts, leather, home decor and spices — sourced directly from verified manufacturers and artisans across Pakistan. No listing fees, commission only on completed sales.</p>
+      <div class="hero-actions">
+        <a href="/marketplace.html" class="btn btn-primary">Browse the marketplace</a>
+        <a href="/signup.html" class="btn btn-outline">Start selling</a>
+      </div>
+      <div class="hero-stats">
+        <div class="stat"><b id="stat-vendors">—</b><span>Active vendors</span></div>
+        <div class="stat"><b id="stat-products">—</b><span>Live products</span></div>
+        <div class="stat"><b>5</b><span>Export categories</span></div>
+        <div class="stat"><b>10–18%</b><span>Commission, no upfront fee</span></div>
+      </div>
+    </div>
+    <div class="route-wrap">
+      <svg class="route-svg" viewBox="0 0 460 300" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path class="route-path" d="M70,230 C130,150 160,120 230,140 C300,160 320,90 400,60" stroke="#E8A33D" stroke-width="2.5" stroke-linecap="round"/>
+        <circle class="route-dot d1" cx="70" cy="230" r="7" fill="#E8A33D"/>
+        <text x="82" y="248" fill="rgba(255,255,255,0.75)" font-size="12" font-family="Inter, sans-serif">Faisalabad, PK</text>
+        <circle class="route-dot d2" cx="230" cy="140" r="5" fill="#FBF7EF"/>
+        <text x="240" y="132" fill="rgba(255,255,255,0.55)" font-size="11" font-family="Inter, sans-serif">Dubai</text>
+        <circle class="route-dot d3" cx="320" cy="90" r="5" fill="#FBF7EF"/>
+        <text x="330" y="82" fill="rgba(255,255,255,0.55)" font-size="11" font-family="Inter, sans-serif">Rotterdam</text>
+        <circle class="route-dot d4" cx="400" cy="60" r="7" fill="#2F6F62"/>
+        <text x="345" y="42" fill="rgba(255,255,255,0.75)" font-size="12" font-family="Inter, sans-serif">London, UK</text>
+      </svg>
+    </div>
+  </div>
+</header>
+
+<section class="section">
+  <div class="container">
+    <span class="eyebrow" style="color:var(--teal);">Categories</span>
+    <h2>Sourced directly from the makers</h2>
+    <div class="grid grid-4" id="category-grid" style="margin-top:24px;">
+      <div class="empty">Loading categories…</div>
+    </div>
+  </div>
+</section>
+
+<section class="section section-tight" style="background:var(--white); border-top:1px solid var(--line); border-bottom:1px solid var(--line);">
+  <div class="container">
+    <span class="eyebrow" style="color:var(--teal);">How it works</span>
+    <h2>From listing to delivery, in four steps</h2>
+    <div class="steps" style="margin-top:32px;">
+      <div class="step"><div class="num">01</div><h3>Vendor lists a product</h3><p>Sellers register, add product details, pricing and MOQ — live immediately.</p></div>
+      <div class="step"><div class="num">02</div><h3>Buyer places an order</h3><p>Buyers browse the marketplace and order directly, no middlemen.</p></div>
+      <div class="step"><div class="num">03</div><h3>Vendor ships, buyer confirms</h3><p>Payment is held until the buyer confirms the order was received.</p></div>
+      <div class="step"><div class="num">04</div><h3>Payout released</h3><p>Vendor is paid automatically, minus the platform commission.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container" style="text-align:center;">
+    <h2>Ready to reach buyers in 20+ countries?</h2>
+    <p style="max-width:500px; margin:0 auto 24px;">No listing fees. You only pay a small commission when a sale actually completes.</p>
+    <a href="/signup.html" class="btn btn-dark">Register as a vendor</a>
+  </div>
+</section>
+
+<footer class="footer" id="site-footer"></footer>
+
+<script src="/js/app.js"></script>
+<script>
+  renderNav('home');
+
+  api('GET', '/categories').then(cats => {
+    const emoji = {'Textiles & Fabric':'🧵','Handicrafts & Artisan':'🎁','Leather Goods':'👜','Home Decor':'🛋️','Food & Spices':'🌶️'};
+    document.getElementById('category-grid').innerHTML = cats.map(c => `
+      <a href="/marketplace.html?category=${c.id}" class="cat-card">
+        <span class="emoji">${emoji[c.name]||'📦'}</span>
+        <h3>${c.name}</h3>
+        <span class="pct">${c.commission_pct}% commission</span>
+      </a>`).join('');
+  });
+
+  api('GET', '/products').then(products => {
+    document.getElementById('stat-products').textContent = products.length;
+    const vendors = new Set(products.map(p=>p.vendor_name));
+    document.getElementById('stat-vendors').textContent = vendors.size || '2';
+  });
+</script>
+</body>
+</html>

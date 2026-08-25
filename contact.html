@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contact — Organix Global Export</title>
+<link rel="icon" type="image/png" href="/img/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<nav class="nav" id="site-nav"></nav>
+
+<div class="pagehead">
+  <div class="container">
+    <h1>Contact us</h1>
+    <p>Questions about selling or buying? Reach out.</p>
+  </div>
+</div>
+
+<section class="section">
+  <div class="container" style="display:grid; grid-template-columns:1fr 1fr; gap:48px;">
+    <div>
+      <h2>Get in touch</h2>
+      <div id="contact-msg"></div>
+      <form id="contact-form">
+        <div class="form-row"><label>Name</label><input type="text" required></div>
+        <div class="form-row"><label>Email</label><input type="email" required></div>
+        <div class="form-row"><label>Message</label><textarea rows="5" required></textarea></div>
+        <button class="btn btn-primary" type="submit">Send message</button>
+      </form>
+    </div>
+    <div class="card">
+      <h3>Office</h3>
+      <p>Organix Global Export<br>Gulberg III, Lahore, Pakistan</p>
+      <h3 style="margin-top:20px;">Email</h3>
+      <p><a href="mailto:hello@organixglobal.pk">hello@organixglobal.pk</a></p>
+      <h3 style="margin-top:20px;">WhatsApp / Phone</h3>
+      <p>+92 300 1234567</p>
+    </div>
+  </div>
+</section>
+
+<footer class="footer" id="site-footer"></footer>
+<script src="/js/app.js"></script>
+<script>
+  renderNav('contact');
+  document.getElementById('contact-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    document.getElementById('contact-msg').innerHTML = `<div class="form-success">Thanks — we'll get back to you within one business day.</div>`;
+    e.target.reset();
+  });
+</script>
+</body>
+</html>

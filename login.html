@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Log in — Organix Global Export</title>
+<link rel="icon" type="image/png" href="/img/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<nav class="nav" id="site-nav"></nav>
+
+<div class="section" style="display:flex; justify-content:center;">
+  <div class="card" style="max-width:420px; width:100%;">
+    <h2>Log in</h2>
+    <p class="form-hint" style="margin-bottom:18px;">Vendor, buyer, and admin accounts all log in here.</p>
+    <div id="msg"></div>
+    <form id="login-form">
+      <div class="form-row"><label>Email</label><input type="email" id="email" required></div>
+      <div class="form-row"><label>Password</label><input type="password" id="password" required></div>
+      <button class="btn btn-primary btn-block" type="submit">Log in</button>
+    </form>
+    <p style="margin-top:16px; text-align:center;">No account? <a href="/signup.html">Sign up</a></p>
+    <div class="form-hint" style="margin-top:18px; padding-top:14px; border-top:1px solid var(--line);">
+      Demo logins — Admin: admin@organix.pk / Admin@12345 · Vendor: vendor1@organix.pk / Vendor@123 · Buyer: buyer1@organix.pk / Buyer@123
+    </div>
+  </div>
+</div>
+
+<footer class="footer" id="site-footer"></footer>
+<script src="/js/app.js"></script>
+<script>
+  renderNav();
+  document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById('msg');
+    msg.innerHTML = '';
+    try {
+      const { token, user } = await api('POST', '/login', {
+        email: document.getElementById('email').value,
+        password: document.getElementById('password').value
+      });
+      setToken(token);
+      setUser(user);
+      const dest = user.role === 'vendor' ? '/vendor-dashboard.html' : user.role === 'buyer' ? '/buyer-dashboard.html' : '/admin-dashboard.html';
+      window.location.href = dest;
+    } catch(err){
+      msg.innerHTML = `<div class="form-error">${err.message}</div>`;
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign up — Organix Global Export</title>
+<link rel="icon" type="image/png" href="/img/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<nav class="nav" id="site-nav"></nav>
+
+<div class="section" style="display:flex; justify-content:center;">
+  <div class="card" style="max-width:480px; width:100%;">
+    <h2>Create your account</h2>
+    <div class="tabs">
+      <div class="tab active" data-role="vendor" onclick="switchRole('vendor')">I'm a Vendor</div>
+      <div class="tab" data-role="buyer" onclick="switchRole('buyer')">I'm a Buyer</div>
+    </div>
+    <div id="msg"></div>
+    <form id="signup-form">
+      <div id="vendor-fields">
+        <div class="form-row"><label>Business name</label><input type="text" id="business_name"></div>
+        <div class="form-row"><label>Business type</label>
+          <select id="business_type">
+            <option value="manufacturer">Manufacturer</option>
+            <option value="wholesaler">Wholesaler</option>
+            <option value="artisan">Artisan</option>
+            <option value="trader">Trader</option>
+          </select>
+        </div>
+        <div class="form-row"><label>City</label><input type="text" id="city"></div>
+        <div class="form-row"><label>Payout account (bank / Payoneer)</label><input type="text" id="bank_account" placeholder="Account number"></div>
+        <div class="form-row"><label>Account title</label><input type="text" id="account_title"></div>
+      </div>
+      <div id="buyer-fields" style="display:none;">
+        <div class="form-row"><label>Full name</label><input type="text" id="name"></div>
+        <div class="form-row"><label>Shipping address</label><input type="text" id="address"></div>
+      </div>
+      <div class="form-row"><label>Phone</label><input type="text" id="phone"></div>
+      <div class="form-row"><label>Email</label><input type="email" id="email" required></div>
+      <div class="form-row"><label>Password</label><input type="password" id="password" required minlength="6"></div>
+      <div class="form-hint" style="margin-bottom:16px;" id="agreement-hint">By signing up as a vendor, you accept the commission structure (10–18% per category, charged only on completed sales) and vendor terms.</div>
+      <button class="btn btn-primary btn-block" type="submit">Create account</button>
+    </form>
+    <p style="margin-top:16px; text-align:center;">Already have an account? <a href="/login.html">Log in</a></p>
+  </div>
+</div>
+
+<footer class="footer" id="site-footer"></footer>
+<script src="/js/app.js"></script>
+<script>
+  renderNav();
+  let role = 'vendor';
+  function switchRole(r){
+    role = r;
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.role === r));
+    document.getElementById('vendor-fields').style.display = r === 'vendor' ? 'block' : 'none';
+    document.getElementById('buyer-fields').style.display = r === 'buyer' ? 'block' : 'none';
+    document.getElementById('agreement-hint').style.display = r === 'vendor' ? 'block' : 'none';
+  }
+
+  document.getElementById('signup-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById('msg');
+    msg.innerHTML = '';
+    const payload = {
+      role,
+      email: document.getElementById('email').value,
+      password: document.getElementById('password').value,
+      phone: document.getElementById('phone').value,
+    };
+    if (role === 'vendor'){
+      payload.business_name = document.getElementById('business_name').value;
+      payload.business_type = document.getElementById('business_type').value;
+      payload.city = document.getElementById('city').value;
+      payload.bank_account = document.getElementById('bank_account').value;
+      payload.account_title = document.getElementById('account_title').value;
+    } else {
+      payload.name = document.getElementById('name').value;
+      payload.address = document.getElementById('address').value;
+    }
+    try {
+      const { token, user } = await api('POST', '/signup', payload);
+      setToken(token);
+      setUser(user);
+      window.location.href = role === 'vendor' ? '/vendor-dashboard.html' : '/buyer-dashboard.html';
+    } catch(err){
+      msg.innerHTML = `<div class="form-error">${err.message}</div>`;
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vendor Dashboard — Organix Global Export</title>
+<link rel="icon" type="image/png" href="/img/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<nav class="nav" id="site-nav"></nav>
+
+<div class="dash">
+  <div class="dash-side">
+    <a data-view="overview" class="active" onclick="showView('overview')">Overview</a>
+    <a data-view="products" onclick="showView('products')">Products</a>
+    <a data-view="orders" onclick="showView('orders')">Orders</a>
+    <a data-view="earnings" onclick="showView('earnings')">Earnings</a>
+  </div>
+  <div class="dash-main">
+
+    <div id="view-overview">
+      <h2>Overview</h2>
+      <div class="stat-grid">
+        <div class="stat-box"><div class="v" id="ov-products">—</div><div class="l">Active listings</div></div>
+        <div class="stat-box"><div class="v" id="ov-pending">—</div><div class="l">Pending orders</div></div>
+        <div class="stat-box"><div class="v" id="ov-earnings">—</div><div class="l">Paid out</div></div>
+        <div class="stat-box"><div class="v" id="ov-verification">—</div><div class="l">Verification status</div></div>
+      </div>
+      <div class="card">
+        <h3>Welcome back, <span id="ov-name"></span></h3>
+        <p>Use the sidebar to manage your products, track orders, and see your earnings. New vendors go live immediately — our team verifies documents within 48 hours.</p>
+      </div>
+    </div>
+
+    <div id="view-products" style="display:none;">
+      <div class="toolbar" style="justify-content:space-between;">
+        <h2 style="margin:0;">Your products</h2>
+        <button class="btn btn-primary" onclick="openProductForm()">+ Add product</button>
+      </div>
+      <div id="product-form-wrap"></div>
+      <table id="products-table">
+        <thead><tr><th>Product</th><th>Category</th><th>Price</th><th>Stock</th><th>Status</th><th></th></tr></thead>
+        <tbody><tr><td colspan="6">Loading…</td></tr></tbody>
+      </table>
+    </div>
+
+    <div id="view-orders" style="display:none;">
+      <h2>Orders</h2>
+      <table>
+        <thead><tr><th>Order</th><th>Buyer</th><th>Qty</th><th>Total</th><th>Payout</th><th>Status</th><th></th></tr></thead>
+        <tbody id="orders-tbody"><tr><td colspan="7">Loading…</td></tr></tbody>
+      </table>
+    </div>
+
+    <div id="view-earnings" style="display:none;">
+      <h2>Earnings</h2>
+      <div class="stat-grid" style="grid-template-columns:repeat(2,1fr);">
+        <div class="stat-box"><div class="v" id="e-paid">—</div><div class="l">Total paid out</div></div>
+        <div class="stat-box"><div class="v" id="e-pending">—</div><div class="l">Pending payout</div></div>
+      </div>
+      <p class="form-hint">Payout is released automatically once a buyer confirms receipt of their order, minus the category commission.</p>
+    </div>
+
+  </div>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+  let categories = [];
+  let user = null;
+
+  (async () => {
+    user = await requireAuth('vendor');
+    if (!user) return;
+    renderNav();
+    document.getElementById('ov-name').textContent = user.business_name || user.name;
+    const cats = await api('GET', '/categories');
+    categories = cats;
+    loadOverview();
+    loadProducts();
+    loadOrders();
+    loadEarnings();
+  })();
+
+  function showView(name){
+    ['overview','products','orders','earnings'].forEach(v => {
+      document.getElementById('view-'+v).style.display = v === name ? 'block' : 'none';
+    });
+    document.querySelectorAll('.dash-side a').forEach(a => a.classList.toggle('active', a.dataset.view === name));
+  }
+
+  async function loadOverview(){
+    const products = await api('GET', '/vendor/products');
+    const orders = await api('GET', '/vendor/orders');
+    const earnings = await api('GET', '/vendor/earnings');
+    document.getElementById('ov-products').textContent = products.filter(p=>p.status==='live').length;
+    document.getElementById('ov-pending').textContent = orders.filter(o=>['pending','in_progress'].includes(o.status)).length;
+    document.getElementById('ov-earnings').textContent = money(earnings.paid_out);
+    document.getElementById('ov-verification').innerHTML = badgeForVerification(user.verification_status);
+  }
+
+  async function loadProducts(){
+    const products = await api('GET', '/vendor/products');
+    const tbody = document.querySelector('#products-table tbody');
+    if (!products.length){
+      tbody.innerHTML = `<tr><td colspan="6" class="empty">No products yet. Add your first one above.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = products.map(p => `
+      <tr>
+        <td>${p.image_emoji} ${p.title}</td>
+        <td>${p.category_name}</td>
+        <td>${money(p.price)}</td>
+        <td>${p.stock}</td>
+        <td><span class="badge badge-status">${p.status}</span></td>
+        <td>
+          <button class="btn btn-ghost btn-sm" onclick='openProductForm(${JSON.stringify(p)})'>Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteProduct(${p.id})">Delete</button>
+        </td>
+      </tr>`).join('');
+  }
+
+  function openProductForm(product){
+    const isEdit = !!product;
+    const wrap = document.getElementById('product-form-wrap');
+    wrap.innerHTML = `
+      <div class="card" style="margin-bottom:20px;">
+        <h3>${isEdit ? 'Edit product' : 'Add a new product'}</h3>
+        <div id="pf-msg"></div>
+        <div class="form-row"><label>Category</label>
+          <select id="pf-category">${categories.map(c => `<option value="${c.id}" ${product&&product.category_id===c.id?'selected':''}>${c.name}</option>`).join('')}</select>
+        </div>
+        <div class="form-row"><label>Title</label><input type="text" id="pf-title" value="${product?product.title:''}"></div>
+        <div class="form-row"><label>Description</label><textarea id="pf-description" rows="3">${product?product.description||'':''}</textarea></div>
+        <div class="form-row"><label>Icon (emoji)</label><input type="text" id="pf-emoji" value="${product?product.image_emoji:'📦'}" maxlength="4"></div>
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
+          <div class="form-row"><label>Price ($)</label><input type="number" step="0.01" id="pf-price" value="${product?product.price:''}"></div>
+          <div class="form-row"><label>MOQ</label><input type="number" id="pf-moq" value="${product?product.moq:1}"></div>
+          <div class="form-row"><label>Stock</label><input type="number" id="pf-stock" value="${product?product.stock:0}"></div>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <button class="btn btn-primary" onclick="saveProduct(${product?product.id:'null'})">${isEdit ? 'Save changes' : 'Add product'}</button>
+          <button class="btn btn-ghost" onclick="document.getElementById('product-form-wrap').innerHTML=''">Cancel</button>
+        </div>
+      </div>`;
+  }
+
+  async function saveProduct(id){
+    const body = {
+      category_id: parseInt(document.getElementById('pf-category').value,10),
+      title: document.getElementById('pf-title').value,
+      description: document.getElementById('pf-description').value,
+      image_emoji: document.getElementById('pf-emoji').value,
+      price: parseFloat(document.getElementById('pf-price').value),
+      moq: parseInt(document.getElementById('pf-moq').value,10),
+      stock: parseInt(document.getElementById('pf-stock').value,10),
+    };
+    try {
+      if (id) await api('PUT', '/vendor/products/'+id, body);
+      else await api('POST', '/vendor/products', body);
+      document.getElementById('product-form-wrap').innerHTML = '';
+      loadProducts();
+      loadOverview();
+    } catch(e){
+      document.getElementById('pf-msg').innerHTML = `<div class="form-error">${e.message}</div>`;
+    }
+  }
+
+  async function deleteProduct(id){
+    if (!confirm('Delete this product?')) return;
+    await api('DELETE', '/vendor/products/'+id);
+    loadProducts();
+    loadOverview();
+  }
+
+  async function loadOrders(){
+    const orders = await api('GET', '/vendor/orders');
+    const tbody = document.getElementById('orders-tbody');
+    if (!orders.length){
+      tbody.innerHTML = `<tr><td colspan="7" class="empty">No orders yet.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = orders.map(o => `
+      <tr>
+        <td>#${o.id} — ${o.product_title}</td>
+        <td>${o.buyer_name}</td>
+        <td>${o.quantity}</td>
+        <td>${money(o.total_amount)}</td>
+        <td>${money(o.payout_amount)}</td>
+        <td>${badgeForOrderStatus(o.status)}</td>
+        <td>${o.status === 'pending' ? `<button class="btn btn-ghost btn-sm" onclick="markInProgress(${o.id})">Mark shipped</button>` : ''}</td>
+      </tr>`).join('');
+  }
+
+  async function markInProgress(id){
+    await api('PUT', '/vendor/orders/'+id, { status: 'in_progress' });
+    loadOrders();
+  }
+
+  async function loadEarnings(){
+    const e = await api('GET', '/vendor/earnings');
+    document.getElementById('e-paid').textContent = money(e.paid_out);
+    document.getElementById('e-pending').textContent = money(e.pending_payout);
+  }
+</script>
+</body>
+</html>

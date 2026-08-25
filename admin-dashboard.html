@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel — Organix Global Export</title>
+<link rel="icon" type="image/png" href="/img/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<nav class="nav" id="site-nav"></nav>
+
+<div class="dash">
+  <div class="dash-side">
+    <a data-view="overview" class="active" onclick="showView('overview')">Overview</a>
+    <a data-view="vendors" onclick="showView('vendors')">Vendors</a>
+    <a data-view="products" onclick="showView('products')">Products</a>
+    <a data-view="orders" onclick="showView('orders')">Orders</a>
+  </div>
+  <div class="dash-main">
+
+    <div id="view-overview">
+      <h2>Platform overview</h2>
+      <div class="stat-grid">
+        <div class="stat-box"><div class="v" id="s-vendors">—</div><div class="l">Vendors (<span id="s-verified">—</span> verified)</div></div>
+        <div class="stat-box"><div class="v" id="s-buyers">—</div><div class="l">Buyers</div></div>
+        <div class="stat-box"><div class="v" id="s-products">—</div><div class="l">Live products</div></div>
+        <div class="stat-box"><div class="v" id="s-gmv">—</div><div class="l">GMV (completed)</div></div>
+      </div>
+      <div class="card">
+        <h3>Commission earned</h3>
+        <p style="font-size:1.6rem; font-family:'Fraunces',serif; color:var(--indigo-ink); margin:0;" id="s-commission">—</p>
+      </div>
+    </div>
+
+    <div id="view-vendors" style="display:none;">
+      <h2>Vendor verification</h2>
+      <table>
+        <thead><tr><th>Business</th><th>Type</th><th>City</th><th>Contact</th><th>Status</th><th></th></tr></thead>
+        <tbody id="vendors-tbody"><tr><td colspan="6">Loading…</td></tr></tbody>
+      </table>
+    </div>
+
+    <div id="view-products" style="display:none;">
+      <h2>Product moderation</h2>
+      <table>
+        <thead><tr><th>Product</th><th>Vendor</th><th>Category</th><th>Status</th><th></th></tr></thead>
+        <tbody id="products-tbody"><tr><td colspan="5">Loading…</td></tr></tbody>
+      </table>
+    </div>
+
+    <div id="view-orders" style="display:none;">
+      <h2>All orders</h2>
+      <table>
+        <thead><tr><th>Order</th><th>Buyer</th><th>Vendor</th><th>Total</th><th>Commission</th><th>Status</th></tr></thead>
+        <tbody id="orders-tbody"><tr><td colspan="6">Loading…</td></tr></tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+  (async () => {
+    const user = await requireAuth('admin');
+    if (!user) return;
+    renderNav();
+    loadStats();
+    loadVendors();
+    loadProducts();
+    loadOrders();
+  })();
+
+  function showView(name){
+    ['overview','vendors','products','orders'].forEach(v => {
+      document.getElementById('view-'+v).style.display = v === name ? 'block' : 'none';
+    });
+    document.querySelectorAll('.dash-side a').forEach(a => a.classList.toggle('active', a.dataset.view === name));
+  }
+
+  async function loadStats(){
+    const s = await api('GET', '/admin/stats');
+    document.getElementById('s-vendors').textContent = s.vendors;
+    document.getElementById('s-verified').textContent = s.verifiedVendors;
+    document.getElementById('s-buyers').textContent = s.buyers;
+    document.getElementById('s-products').textContent = s.liveProducts;
+    document.getElementById('s-gmv').textContent = money(s.gmv);
+    document.getElementById('s-commission').textContent = money(s.commission);
+  }
+
+  async function loadVendors(){
+    const vendors = await api('GET', '/admin/vendors');
+    document.getElementById('vendors-tbody').innerHTML = vendors.map(v => `
+      <tr>
+        <td>${v.business_name || v.name}</td>
+        <td>${v.business_type || '—'}</td>
+        <td>${v.city || '—'}</td>
+        <td>${v.email}<br><span class="form-hint">${v.phone||''}</span></td>
+        <td>${badgeForVerification(v.verification_status)}</td>
+        <td>
+          ${v.verification_status !== 'verified' ? `<button class="btn btn-primary btn-sm" onclick="verifyVendor(${v.id},'verified')">Approve</button>` : ''}
+          ${v.verification_status !== 'rejected' ? `<button class="btn btn-danger btn-sm" onclick="verifyVendor(${v.id},'rejected')">Reject</button>` : ''}
+        </td>
+      </tr>`).join('') || `<tr><td colspan="6" class="empty">No vendors yet.</td></tr>`;
+  }
+
+  async function verifyVendor(id, status){
+    await api('POST', '/admin/vendors/'+id+'/verify', { status });
+    loadVendors();
+    loadStats();
+  }
+
+  async function loadProducts(){
+    const products = await api('GET', '/admin/products');
+    document.getElementById('products-tbody').innerHTML = products.map(p => `
+      <tr>
+        <td>${p.image_emoji} ${p.title}</td>
+        <td>${p.vendor_name}</td>
+        <td>${p.category_name}</td>
+        <td><span class="badge badge-status">${p.status}</span></td>
+        <td>
+          ${p.status !== 'live' ? `<button class="btn btn-primary btn-sm" onclick="moderateProduct(${p.id},'live')">Approve</button>` : ''}
+          ${p.status !== 'rejected' ? `<button class="btn btn-danger btn-sm" onclick="moderateProduct(${p.id},'rejected')">Remove</button>` : ''}
+        </td>
+      </tr>`).join('') || `<tr><td colspan="5" class="empty">No products yet.</td></tr>`;
+  }
+
+  async function moderateProduct(id, status){
+    await api('POST', '/admin/products/'+id+'/moderate', { status });
+    loadProducts();
+    loadStats();
+  }
+
+  async function loadOrders(){
+    const orders = await api('GET', '/admin/orders');
+    document.getElementById('orders-tbody').innerHTML = orders.map(o => `
+      <tr>
+        <td>#${o.id} — ${o.product_title}</td>
+        <td>${o.buyer_name}</td>
+        <td>${o.vendor_name}</td>
+        <td>${money(o.total_amount)}</td>
+        <td>${money(o.commission_amount)}</td>
+        <td>${badgeForOrderStatus(o.status)}</td>
+      </tr>`).join('') || `<tr><td colspan="6" class="empty">No orders yet.</td></tr>`;
+  }
+</script>
+</body>
+</html>

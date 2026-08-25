@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Buyer Dashboard — Organix Global Export</title>
+<link rel="icon" type="image/png" href="/img/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<nav class="nav" id="site-nav"></nav>
+
+<div class="dash">
+  <div class="dash-side">
+    <a data-view="orders" class="active" onclick="showView('orders')">My orders</a>
+    <a data-view="profile" onclick="showView('profile')">Profile</a>
+  </div>
+  <div class="dash-main">
+
+    <div id="view-orders">
+      <h2>My orders</h2>
+      <table>
+        <thead><tr><th>Order</th><th>Vendor</th><th>Qty</th><th>Total</th><th>Status</th><th></th></tr></thead>
+        <tbody id="orders-tbody"><tr><td colspan="6">Loading…</td></tr></tbody>
+      </table>
+    </div>
+
+    <div id="view-profile" style="display:none;">
+      <h2>Profile</h2>
+      <div class="card" style="max-width:420px;">
+        <p><strong>Name:</strong> <span id="p-name"></span></p>
+        <p><strong>Email:</strong> <span id="p-email"></span></p>
+        <p><strong>Phone:</strong> <span id="p-phone"></span></p>
+        <p><strong>Shipping address:</strong> <span id="p-address"></span></p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+  (async () => {
+    const user = await requireAuth('buyer');
+    if (!user) return;
+    renderNav();
+    document.getElementById('p-name').textContent = user.name;
+    document.getElementById('p-email').textContent = user.email;
+    document.getElementById('p-phone').textContent = user.phone || '—';
+    document.getElementById('p-address').textContent = user.address || '—';
+    loadOrders();
+  })();
+
+  function showView(name){
+    ['orders','profile'].forEach(v => {
+      document.getElementById('view-'+v).style.display = v === name ? 'block' : 'none';
+    });
+    document.querySelectorAll('.dash-side a').forEach(a => a.classList.toggle('active', a.dataset.view === name));
+  }
+
+  async function loadOrders(){
+    const orders = await api('GET', '/buyer/orders');
+    const tbody = document.getElementById('orders-tbody');
+    if (!orders.length){
+      tbody.innerHTML = `<tr><td colspan="6" class="empty">No orders yet. <a href="/marketplace.html">Browse the marketplace</a></td></tr>`;
+      return;
+    }
+    tbody.innerHTML = orders.map(o => `
+      <tr>
+        <td>#${o.id} — ${o.product_title}</td>
+        <td>${o.vendor_name}</td>
+        <td>${o.quantity}</td>
+        <td>${money(o.total_amount)}</td>
+        <td>${badgeForOrderStatus(o.status)}</td>
+        <td>${o.status === 'in_progress' || o.status === 'pending' ? `<button class="btn btn-primary btn-sm" onclick="confirmOrder(${o.id})">Confirm receipt</button>` : ''}</td>
+      </tr>`).join('');
+  }
+
+  async function confirmOrder(id){
+    if (!confirm('Confirm you received this order? This releases payment to the vendor.')) return;
+    await api('POST', '/buyer/orders/'+id+'/confirm');
+    loadOrders();
+  }
+</script>
+</body>
+</html>

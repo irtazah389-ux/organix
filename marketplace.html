@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marketplace — Organix Global Export</title>
+<link rel="icon" type="image/png" href="/img/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<nav class="nav" id="site-nav"></nav>
+
+<div class="pagehead">
+  <div class="container">
+    <h1>Marketplace</h1>
+    <p>Browse export-ready products from verified Pakistani vendors.</p>
+  </div>
+</div>
+
+<div class="section-tight">
+  <div class="container">
+    <div class="toolbar">
+      <input type="text" id="search" placeholder="Search products…">
+      <select id="category-filter"><option value="">All categories</option></select>
+      <select id="sort-filter">
+        <option value="">Newest first</option>
+        <option value="price_asc">Price: Low to high</option>
+        <option value="price_desc">Price: High to low</option>
+      </select>
+    </div>
+    <div class="grid grid-3" id="product-grid">
+      <div class="empty">Loading products…</div>
+    </div>
+  </div>
+</div>
+
+<footer class="footer" id="site-footer"></footer>
+
+<script src="/js/app.js"></script>
+<script>
+  renderNav('marketplace');
+  const emoji = {'Textiles & Fabric':'🧵','Handicrafts & Artisan':'🎁','Leather Goods':'👜','Home Decor':'🛋️','Food & Spices':'🌶️'};
+  const params = new URLSearchParams(window.location.search);
+
+  let categories = [];
+  api('GET', '/categories').then(cats => {
+    categories = cats;
+    const sel = document.getElementById('category-filter');
+    sel.innerHTML += cats.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    if (params.get('category')) sel.value = params.get('category');
+    loadProducts();
+  });
+
+  function loadProducts(){
+    const q = new URLSearchParams();
+    const search = document.getElementById('search').value.trim();
+    const category = document.getElementById('category-filter').value;
+    const sort = document.getElementById('sort-filter').value;
+    if (search) q.set('search', search);
+    if (category) q.set('category', category);
+    if (sort) q.set('sort', sort);
+
+    const grid = document.getElementById('product-grid');
+    grid.innerHTML = `<div class="empty">Loading products…</div>`;
+
+    api('GET', '/products?' + q.toString()).then(products => {
+      if (!products.length){
+        grid.innerHTML = `<div class="empty">No products match your filters yet.</div>`;
+        return;
+      }
+      grid.innerHTML = products.map(p => `
+        <a href="/product.html?id=${p.id}" class="product-card">
+          <div class="product-thumb">${p.image_emoji || emoji[p.category_name] || '📦'}</div>
+          <div class="product-body">
+            <span class="cat-tag">${p.category_name}</span>
+            <h3>${p.title}</h3>
+            <span class="vendor">${p.vendor_name} · ${p.vendor_city||''} ${p.vendor_verification==='verified' ? '✓' : ''}</span>
+            <span class="price">${money(p.price)} <span style="font-size:0.7rem; color:var(--ink-soft); font-family:Inter;">/unit</span></span>
+            <span class="moq">MOQ: ${p.moq} units</span>
+          </div>
+        </a>`).join('');
+    });
+  }
+
+  document.getElementById('search').addEventListener('input', debounce(loadProducts, 300));
+  document.getElementById('category-filter').addEventListener('change', loadProducts);
+  document.getElementById('sort-filter').addEventListener('change', loadProducts);
+
+  function debounce(fn, ms){
+    let t;
+    return (...args) => { clearTimeout(t); t = setTimeout(()=>fn(...args), ms); };
+  }
+</script>
+</body>
+</html>

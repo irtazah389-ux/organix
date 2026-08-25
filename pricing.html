@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pricing & Commission — Organix Global Export</title>
+<link rel="icon" type="image/png" href="/img/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<nav class="nav" id="site-nav"></nav>
+
+<div class="pagehead">
+  <div class="container">
+    <h1>Pricing & commission</h1>
+    <p>No listing fees. We only earn when you do.</p>
+  </div>
+</div>
+
+<section class="section">
+  <div class="container" style="max-width:760px;">
+    <div class="card">
+      <table id="commission-table">
+        <thead><tr><th>Category</th><th>Commission</th></tr></thead>
+        <tbody><tr><td colspan="2">Loading…</td></tr></tbody>
+      </table>
+    </div>
+    <h2 style="margin-top:36px;">How commission works</h2>
+    <p>There's no upfront cost to list a product. When an order is completed and the buyer confirms receipt, the commission for that product's category is deducted automatically — the rest is released to your payout account.</p>
+    <p>Example: a $2,250 order in Textiles & Fabric (13% commission) results in a $292.50 platform fee and a $1,957.50 payout to the vendor.</p>
+  </div>
+</section>
+
+<footer class="footer" id="site-footer"></footer>
+<script src="/js/app.js"></script>
+<script>
+  renderNav('pricing');
+  api('GET', '/categories').then(cats => {
+    document.querySelector('#commission-table tbody').innerHTML = cats.map(c =>
+      `<tr><td>${c.name}</td><td>${c.commission_pct}%</td></tr>`).join('');
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Product — Organix Global Export</title>
+<link rel="icon" type="image/png" href="/img/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<nav class="nav" id="site-nav"></nav>
+
+<div class="section" id="product-root">
+  <div class="container">
+    <div class="empty">Loading product…</div>
+  </div>
+</div>
+
+<footer class="footer" id="site-footer"></footer>
+
+<script src="/js/app.js"></script>
+<script>
+  renderNav('marketplace');
+  const emoji = {'Textiles & Fabric':'🧵','Handicrafts & Artisan':'🎁','Leather Goods':'👜','Home Decor':'🛋️','Food & Spices':'🌶️'};
+  const id = new URLSearchParams(window.location.search).get('id');
+
+  if (!id){
+    document.getElementById('product-root').innerHTML = `<div class="container"><div class="empty">No product specified. <a href="/marketplace.html">Back to marketplace</a></div></div>`;
+  } else {
+    api('GET', '/products/' + id).then(p => {
+      document.title = p.title + ' — Organix Global Export';
+      document.getElementById('product-root').innerHTML = `
+        <div class="container" style="display:grid; grid-template-columns:1fr 1fr; gap:48px; align-items:start;">
+          <div>
+            <div class="product-thumb" style="height:340px; border-radius:var(--radius); border:1px solid var(--line); font-size:6rem;">${p.image_emoji || emoji[p.category_name] || '📦'}</div>
+          </div>
+          <div>
+            <span class="cat-tag" style="font-size:0.8rem;">${p.category_name}</span>
+            <h1 style="margin-top:6px;">${p.title}</h1>
+            <p style="margin-bottom:4px;">Sold by <a href="/marketplace.html?category=${p.category_id}">${p.vendor_name}</a> · ${p.vendor_city||''} ${badgeForVerification(p.vendor_verification)}</p>
+            <p>${p.description || ''}</p>
+            <div class="card" style="margin-top:14px;">
+              <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:14px;">
+                <span class="price" style="font-size:1.8rem;">${money(p.price)}<span style="font-size:0.8rem; color:var(--ink-soft); font-family:Inter;"> / unit</span></span>
+                <span class="moq">MOQ ${p.moq} · ${p.stock} in stock</span>
+              </div>
+              <div id="order-area"></div>
+            </div>
+          </div>
+        </div>`;
+      renderOrderArea(p);
+    }).catch(e => {
+      document.getElementById('product-root').innerHTML = `<div class="container"><div class="empty">${e.message}</div></div>`;
+    });
+  }
+
+  function renderOrderArea(p){
+    const user = getUser();
+    const area = document.getElementById('order-area');
+
+    if (!getToken()){
+      area.innerHTML = `<a href="/login.html" class="btn btn-primary btn-block">Log in as a buyer to order</a>`;
+      return;
+    }
+    if (user && user.role !== 'buyer'){
+      area.innerHTML = `<p class="form-hint">Only buyer accounts can place orders.</p>`;
+      return;
+    }
+
+    area.innerHTML = `
+      <div class="form-row">
+        <label>Quantity (units)</label>
+        <input type="number" id="qty" value="${p.moq}" min="${p.moq}" step="1">
+        <div class="form-hint">Minimum order quantity: ${p.moq}</div>
+      </div>
+      <div id="order-total" class="form-hint" style="margin-bottom:14px;"></div>
+      <div id="order-msg"></div>
+      <button class="btn btn-primary btn-block" onclick="placeOrder(${p.id}, ${p.price})">Place order</button>`;
+
+    const qtyInput = document.getElementById('qty');
+    const updateTotal = () => {
+      const q = parseInt(qtyInput.value,10) || 0;
+      document.getElementById('order-total').textContent = `Order total: ${money(q * p.price)}`;
+    };
+    qtyInput.addEventListener('input', updateTotal);
+    updateTotal();
+  }
+
+  async function placeOrder(productId, price){
+    const qty = parseInt(document.getElementById('qty').value, 10);
+    const msg = document.getElementById('order-msg');
+    msg.innerHTML = '';
+    try {
+      const order = await api('POST', '/orders', { product_id: productId, quantity: qty });
+      msg.innerHTML = `<div class="form-success">Order placed! Total ${money(order.total_amount)}. <a href="/buyer-dashboard.html">View your orders</a></div>`;
+    } catch(e){
+      msg.innerHTML = `<div class="form-error">${e.message}</div>`;
+    }
+  }
+</script>
+</body>
+</html>
