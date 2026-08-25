@@ -1,0 +1,9 @@
+{
+  "name": "organix-global-export",
+  "version": "1.0.0",
+  "description": "Organix Global Export — B2B/B2C vendor marketplace (Vercel + Postgres)",
+  "private": true,
+  "dependencies": {
+    "pg": "^8.13.1"
+  }
+}
